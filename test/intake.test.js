@@ -2,9 +2,9 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeDb } from './d1-shim.js';
 import { check, normalize, dedupeKey, RULES } from '../src/rules.js';
-import { onRequestPost } from '../functions/api/intake.js';
-import { onRequestGet } from '../functions/api/admin/intake/index.js';
-import { onRequestPatch } from '../functions/api/admin/intake/[id].js';
+import { onRequestPost } from '../src/handlers/intake.js';
+import { onRequestGet } from '../src/handlers/admin-list.js';
+import { onRequestPatch } from '../src/handlers/admin-patch.js';
 
 const OK = { affiliation: 'DT-1', name: '홍길동', title: '책임', body: '가상 설비의 시뮬레이션 정합도는 어떤 기준으로 확인하나요?' };
 let env;

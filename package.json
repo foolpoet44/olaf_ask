@@ -6,8 +6,6 @@
   "description": "질문 접수 — Cloudflare Pages + D1, 의존성 0",
   "scripts": {
     "test": "node --test --test-timeout=30000 \"test/*.test.js\"",
-    "dev": "npx wrangler pages dev public --d1 DB --binding ADMIN_KEY=dev-key",
-    "db:local": "npx wrangler d1 migrations apply olaf-ask --local",
-    "db:remote": "npx wrangler d1 migrations apply olaf-ask --remote"
+    "dev": "npx wrangler dev --var ADMIN_KEY:dev-key"
   }
 }

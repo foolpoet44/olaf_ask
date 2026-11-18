@@ -1,5 +1,5 @@
 // PATCH /api/admin/intake/:id {"status":"open"|"hidden"} — 숨김/해제만 (본문 수정·삭제 없음)
-import { ok, fail, requireAdmin } from '../../../../src/http.js';
+import { ok, fail, requireAdmin } from '../http.js';
 
 export async function onRequestPatch({ request, env, params }) {
   const denied = requireAdmin(request, env);

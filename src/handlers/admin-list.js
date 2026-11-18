@@ -1,6 +1,6 @@
 // GET /api/admin/intake — 제출 현황 + 카드 목록 (X-Admin-Key 필요)
-import { refOf } from '../../../../src/rules.js';
-import { ok, requireAdmin } from '../../../../src/http.js';
+import { refOf } from '../rules.js';
+import { ok, requireAdmin } from '../http.js';
 
 export async function onRequestGet({ request, env }) {
   const denied = requireAdmin(request, env);

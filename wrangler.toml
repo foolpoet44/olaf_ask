@@ -1,9 +1,14 @@
 name = "olaf-ask"
+main = "src/worker.js"
 compatibility_date = "2026-01-01"
-pages_build_output_dir = "public"
 
-# 'wrangler d1 create olaf-ask' 결과의 database_id 를 아래에 넣는다
+# 정적 화면 — 맞는 파일이 있으면 Worker 없이 바로 응답한다 (/ → index.html · /admin → admin.html)
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# D1 — database_id 를 비워 두면 배포 때 wrangler 가 자동으로 만든다(자동 프로비저닝).
+# 자동 생성이 안 되면 대시보드 D1 에서 만든 뒤 database_id = "..." 를 여기에 넣는다.
 [[d1_databases]]
 binding = "DB"
 database_name = "olaf-ask"
-database_id = "REPLACE_WITH_DATABASE_ID"

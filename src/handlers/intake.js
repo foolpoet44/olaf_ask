@@ -1,6 +1,6 @@
 // POST /api/intake — 누구나 제출 (로그인 없음)
-import { RULES, normalize, check, dedupeKey, refOf, sha256Hex } from '../../src/rules.js';
-import { ok, fail } from '../../src/http.js';
+import { RULES, normalize, check, dedupeKey, refOf, sha256Hex } from '../rules.js';
+import { ok, fail } from '../http.js';
 
 export async function onRequestPost({ request, env }) {
   const text = await request.text();
