@@ -1,0 +1,28 @@
+:root { --accent: #a50034; --ink: #171717; --muted: #6b6b6b; --line: #e5e5e5; --bg: #fff; --soft: #f7f7f7; }
+* { box-sizing: border-box; }
+body { margin: 0; color: var(--ink); background: var(--bg); font: 16px/1.6 Pretendard, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif; }
+main { max-width: 640px; margin: 0 auto; padding: 24px 16px 64px; }
+main.wide { max-width: 1100px; }
+h1 { font-size: 1.5rem; margin: 8px 0 4px; } h2 { font-size: 1.15rem; margin: 28px 0 8px; }
+.muted { color: var(--muted); } .small { font-size: .85rem; } .hidden { display: none !important; }
+.card { border: 1px solid var(--line); border-radius: 10px; padding: 16px; background: #fff; }
+label { display: block; margin: 14px 0 4px; font-weight: 600; }
+input[type=text], input[type=password], textarea, select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font: inherit; background: #fff; }
+textarea { resize: vertical; }
+button, .btn { padding: 9px 16px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font: inherit; cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+button:disabled { opacity: .5; cursor: default; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; } .end { justify-content: flex-end; } .spacer { flex: 1; }
+.msg { margin-top: 12px; padding: 10px 12px; border-radius: 8px; } .msg.ok { background: #f0f7f1; } .msg.err { background: #fdf0f3; color: #7a0026; }
+.msg ul { margin: 6px 0 0; padding-left: 18px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-top: 12px; }
+table { width: 100%; border-collapse: collapse; } th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.pre { white-space: pre-wrap; word-break: break-word; }
+/* 전체 화면 공유 */
+.stage { position: fixed; inset: 0; background: #fff; z-index: 10; display: flex; flex-direction: column; }
+.stage-head, .stage-foot { display: flex; gap: 12px; align-items: center; padding: 12px 20px; color: var(--muted); }
+.stage-head .meta { flex: 1; } .stage-body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 4vw; overflow: auto; }
+.stage-text { font-size: clamp(1.6rem, 3.6vw, 3rem); line-height: 1.55; max-width: 1100px; margin: 0; white-space: pre-wrap; word-break: break-word; border-left: 6px solid var(--accent); padding-left: 3vw; }
+.stage-foot { justify-content: center; }
+body.stage-open { overflow: hidden; }
+@media (max-width: 600px) { main { padding: 16px 12px 48px; } }

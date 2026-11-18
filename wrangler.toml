@@ -1,0 +1,9 @@
+name = "olaf-ask"
+compatibility_date = "2026-01-01"
+pages_build_output_dir = "public"
+
+# 'wrangler d1 create olaf-ask' 결과의 database_id 를 아래에 넣는다
+[[d1_databases]]
+binding = "DB"
+database_name = "olaf-ask"
+database_id = "REPLACE_WITH_DATABASE_ID"
