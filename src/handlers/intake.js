@@ -26,8 +26,8 @@ export async function onRequestPost({ request, env }) {
   const key = await dedupeKey(q);
   const at = new Date().toISOString();
   const r = await env.DB.prepare(
-    'INSERT INTO intake_questions (affiliation, name, title, body, dedupe_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(dedupe_key) DO NOTHING',
-  ).bind(q.affiliation, q.name, q.title, q.body, key, at, at).run();
+    'INSERT INTO intake_questions (session, affiliation, name, title, body, dedupe_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(dedupe_key) DO NOTHING',
+  ).bind(q.session, q.affiliation, q.name, q.title, q.body, key, at, at).run();
   if (r.meta.changes === 0) { // 같은 성명·본문 재전송 → 기존 접수번호
     const dup = await env.DB.prepare('SELECT id FROM intake_questions WHERE dedupe_key = ?').bind(key).first();
     return ok({ id: dup.id, ref: refOf(dup.id) }, 200);

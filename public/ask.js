@@ -1,5 +1,6 @@
 const $ = (s) => document.querySelector(s);
 const MAX = 500;
+const SESSION = document.documentElement.dataset.session;
 const show = (kind, text, problems = []) => {
   const out = $('#out');
   out.replaceChildren();
@@ -24,7 +25,7 @@ $('#submit').addEventListener('click', async () => {
     const r = await fetch('/api/intake', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ affiliation: $('#affiliation').value, name: $('#name').value, title: $('#title').value, body: $('#body').value }),
+      body: JSON.stringify({ session: SESSION, affiliation: $('#affiliation').value, name: $('#name').value, title: $('#title').value, body: $('#body').value }),
     });
     const j = await r.json();
     if (!r.ok) {

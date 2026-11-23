@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { makeDb } from './d1-shim.js';
 import worker from '../src/worker.js';
 
-const OK = { affiliation: 'DT-1', name: '홍길동', title: '책임', body: '가상 설비의 시뮬레이션 정합도는 어떤 기준으로 확인하나요?' };
+const OK = { session: 'am', affiliation: 'DT-1', name: '홍길동', title: '책임', body: '가상 설비의 시뮬레이션 정합도는 어떤 기준으로 확인하나요?' };
 
 test('새 DB: 첫 제출이 표를 만들고 201 · 사무국 목록 · 숨김 · 트리거 동작', async () => {
   const DB = makeDb({ init: false });
@@ -27,4 +27,15 @@ test('라우팅: 화면은 assets 로 · 없는 API 404 · 메서드 불일치 4
   assert.equal((await worker.fetch(new Request('http://x/api/nope'), env)).status, 404);
   assert.equal((await worker.fetch(new Request('http://x/api/intake'), env)).status, 404);
   assert.equal((await worker.fetch(new Request('http://x/api/intake', { method: 'POST', body: '{}' }), { ASSETS: env.ASSETS })).status, 503);
+});
+
+test('기존 DB(session 칸 없음) 마이그레이션: 칸이 추가되고 기존 행은 오전', async () => {
+  const DB = makeDb({ init: false });
+  DB.raw.exec(`CREATE TABLE intake_questions (id INTEGER PRIMARY KEY, affiliation TEXT NOT NULL, name TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, dedupe_key TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','hidden')), created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`);
+  DB.raw.exec("INSERT INTO intake_questions (affiliation,name,title,body,dedupe_key,created_at,updated_at) VALUES ('a','가','나','본문본문본문본문','k','t','t')");
+  const env = { DB, ADMIN_KEY: 'k', ASSETS: { fetch: async () => new Response('') } };
+  const call = (method, path, body, key) => worker.fetch(new Request(`http://x${path}`, { method, body: body && JSON.stringify(body), headers: key ? { 'x-admin-key': key } : {} }), env);
+  assert.equal((await call('POST', '/api/intake', { ...OK, session: 'pm' })).status, 201);
+  const d = (await (await call('GET', '/api/admin/intake', null, 'k')).json()).data;
+  assert.deepEqual(d.summary.bySession, { am: 1, pm: 1 });
 });

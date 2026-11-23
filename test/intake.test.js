@@ -6,7 +6,7 @@ import { onRequestPost } from '../src/handlers/intake.js';
 import { onRequestGet } from '../src/handlers/admin-list.js';
 import { onRequestPatch } from '../src/handlers/admin-patch.js';
 
-const OK = { affiliation: 'DT-1', name: '홍길동', title: '책임', body: '가상 설비의 시뮬레이션 정합도는 어떤 기준으로 확인하나요?' };
+const OK = { session: 'am', affiliation: 'DT-1', name: '홍길동', title: '책임', body: '가상 설비의 시뮬레이션 정합도는 어떤 기준으로 확인하나요?' };
 let env;
 beforeEach(() => { env = { DB: makeDb(), ADMIN_KEY: 'test-key' }; });
 
@@ -23,6 +23,8 @@ test('단위: 길이 경계·필수·개인정보 거부 · 오류 문장에 입
   assert.deepEqual(c({ body: 'a'.repeat(500) }), []);
   assert.equal(c({ body: 'a'.repeat(501) }).length, 1);
   assert.equal(c({ name: '' }).length, 1);
+  assert.equal(c({ session: 'x' }).length, 1);
+  assert.equal(c({ session: undefined }).length, 1);
   assert.equal(c({ name: 'x'.repeat(21) }).length, 1);
   assert.equal(c({ body: '사번 1234567 입니다 알려주세요' }).length, 1);
   assert.equal(c({ body: '메일 a@b.com 으로 부탁드립니다 감사' }).length, 1);
@@ -79,8 +81,7 @@ test('현황: 건수·이름순 제출자 · 카드 접수순 · 필터 · 판�
   assert.equal(r.status, 200);
   const { summary, items } = (await j(r)).data;
   assert.equal(summary.total, 3);
-  assert.deepEqual(summary.submitters.map((x) => [x.name, x.count]), [['가나다', 1], ['홍길동', 2]]);
-  assert.deepEqual(items.map((x) => x.id), [1, 2, 3]);
+    assert.deepEqual(items.map((x) => x.id), [1, 2, 3]);
   assert.doesNotMatch(JSON.stringify(summary) + JSON.stringify(items), /"(rank|score|top|best|recommend)/i);
   assert.equal((await j(await get('?affiliation=PA-1'))).data.items.length, 1);
 });
@@ -97,4 +98,35 @@ test('숨김은 상태 변경 · 목록·건수에서 빠짐 · 본문 UPDATE·D
   assert.equal((await patch('1', { status: 'open' })).status, 200);
   assert.throws(() => env.DB.raw.prepare("UPDATE intake_questions SET body = 'x' WHERE id = 1").run(), /immutable/);
   assert.throws(() => env.DB.raw.prepare('DELETE FROM intake_questions WHERE id = 1').run(), /never deleted/);
+});
+
+test('세션 분리: 오전·오후 따로 집계·필터 · 같은 질문도 세션이 다르면 별건', async () => {
+  assert.equal((await post(OK)).status, 201);
+  assert.equal((await post({ ...OK, session: 'pm' })).status, 201);
+  assert.equal((await post({ ...OK, session: 'pm', body: '오후에만 하는 두 번째 질문입니다 알려 주세요' })).status, 201);
+  const all = (await j(await get())).data;
+  assert.deepEqual(all.summary.bySession, { am: 1, pm: 2 });
+  const pm = (await j(await get('?session=pm'))).data;
+  assert.equal(pm.items.length, 2);
+  assert.ok(pm.items.every((x) => x.session === 'pm'));
+  assert.equal((await j(await get('?session=am'))).data.items.length, 1);
+  assert.equal((await get('?session=zz')).status, 400);
+});
+
+test('대상자 명단: 32명 · 성명(공백 무시)으로 질문 여부 · 명단 밖 제출자 별도', async () => {
+  await post({ ...OK, name: '정 용진', affiliation: 'PRI 선행장비기술연구소', title: '책임연구원' });
+  await post({ ...OK, session: 'pm', name: '정용진', body: '오후에도 질문이 있습니다 알려 주세요 부탁' });
+  await post({ ...OK, name: '한영재', body: '오전 질문입니다 근거 데이터는 어디서 얻나요?' });
+  await post({ ...OK, name: '외부인', body: '명단에 없는 사람의 질문입니다 확인해 주세요' });
+  const s = (await j(await get())).data.summary;
+  assert.equal(s.rosterTotal, 32);
+  assert.equal(s.roster.length, 32);
+  const by = (n) => s.roster.find((p) => p.name === n);
+  assert.deepEqual([by('정용진').am, by('정용진').pm], [1, 1]);
+  assert.deepEqual([by('한영재').am, by('한영재').pm], [1, 0]);
+  assert.deepEqual(s.asked, { am: 2, pm: 1, any: 2 });
+  assert.deepEqual(s.unlisted.map((x) => x.name), ['외부인']);
+  // 숨긴 질문은 제출로 치지 않는다
+  await patch('1', { status: 'hidden' });
+  assert.equal((await j(await get())).data.summary.roster.find((p) => p.name === '정용진').am, 0);
 });

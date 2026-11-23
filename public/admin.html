@@ -10,19 +10,21 @@
 </head>
 <body>
   <main class="wide">
-    <div class="row"><h1 style="margin:0">질문 접수</h1><span class="spacer"></span><span class="muted small">제출 주소: <code id="askurl"></code></span></div>
+    <div class="row"><h1 style="margin:0">질문 접수</h1><span class="spacer"></span><span class="muted small">제출 주소 — 오전: <code id="url-am"></code> · 오후: <code id="url-pm"></code></span></div>
     <section class="card hidden" id="gate" style="margin-top:12px;max-width:420px">
       <label for="key">사무국 키</label><input type="password" id="key" autocomplete="off">
       <div id="gate-out"></div>
       <div class="row end" style="margin-top:10px"><button class="primary" id="enter">열기</button></div>
     </section>
     <div id="app" class="hidden">
+      <div class="row" id="tabs" style="margin-top:12px"></div>
       <h2>제출 현황</h2><div id="summary" class="card"></div>
+      <h2>대상자 질문 여부</h2><div id="roster" class="card"></div>
       <h2>질문 카드</h2>
       <p class="small muted">접수순입니다 (순위 없음). 카드를 누르면 전체 화면으로 공유합니다.</p>
       <div class="row">
         <select id="f-aff" style="width:auto"><option value="">전체 소속</option></select>
-        <select id="f-name" style="width:auto"><option value="">전체 제출자</option></select>
+        <select id="f-name" style="width:auto"><option value="">전체 대상자</option></select>
         <label class="row" style="margin:0;font-weight:400"><input type="checkbox" id="f-hidden"> 숨김 포함</label>
       </div>
       <div class="grid" id="cards"></div>

@@ -7,7 +7,10 @@ const el = (tag, attrs = {}, ...kids) => {
 };
 const fmt = (iso) => { const d = new Date(iso); const p = (x) => String(x).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
 
-$('#askurl').textContent = `${location.origin}/`;
+$('#url-am').textContent = `${location.origin}/am`;
+$('#url-pm').textContent = `${location.origin}/pm`;
+const LABEL = { am: '오전', pm: '오후' };
+let session = ''; // '' 전체 · am · pm
 let key = '';
 try { key = sessionStorage.getItem('adminKey') || ''; } catch { /* 저장소 차단 */ }
 let items = [];
@@ -22,27 +25,47 @@ async function call(path, opt = {}) {
 
 async function load() {
   const q = new URLSearchParams();
+  if (session) q.set('session', session);
   if ($('#f-aff').value) q.set('affiliation', $('#f-aff').value);
   if ($('#f-name').value) q.set('name', $('#f-name').value);
   if ($('#f-hidden').checked) q.set('hidden', '1');
   const data = await call('/api/admin/intake?' + q);
   items = data.items;
+  drawTabs();
   drawSummary(data.summary);
+  drawRoster(data.summary);
   if (!filtersReady) {
     filtersReady = true;
-    for (const a of data.summary.byAffiliation) $('#f-aff').append(el('option', { value: a.affiliation }, a.affiliation));
-    for (const s of data.summary.submitters) $('#f-name').append(el('option', { value: s.name }, s.name));
+    for (const a of [...new Set(data.summary.roster.map((p) => p.affiliation))].sort()) $('#f-aff').append(el('option', { value: a }, a));
+    for (const p of data.summary.roster) $('#f-name').append(el('option', { value: p.name }, p.name));
   }
   drawCards();
 }
 
+function drawTabs() {
+  $('#tabs').replaceChildren(...[['', '전체'], ['am', '오전 세션'], ['pm', '오후 세션']].map(([v, t]) =>
+    el('button', { class: v === session ? 'primary' : '', onclick: () => { session = v; load(); } }, t)));
+}
+
 function drawSummary(s) {
   const box = $('#summary');
-  box.replaceChildren(el('p', {}, el('b', {}, `총 ${s.total}건`), ` · 제출자 ${s.submitters.length}명`));
-  if (!s.total) { box.append(el('p', { class: 'muted' }, '아직 접수된 질문이 없습니다')); return; }
-  box.append(el('p', { class: 'small' }, s.byAffiliation.map((a) => `${a.affiliation} ${a.count}건`).join(' · ')));
-  box.append(el('table', {}, el('thead', {}, el('tr', {}, ['성명', '직급', '소속', '건수'].map((h) => el('th', {}, h)))),
-    el('tbody', {}, s.submitters.map((x) => el('tr', {}, el('td', {}, x.name), el('td', {}, x.title), el('td', {}, x.affiliation), el('td', {}, String(x.count)))))));
+  box.replaceChildren(el('p', {}, el('b', {}, `총 ${s.total}건`), ` · 오전 ${s.bySession.am}건 · 오후 ${s.bySession.pm}건`));
+  if (!s.total) box.append(el('p', { class: 'muted' }, '아직 접수된 질문이 없습니다'));
+}
+
+// 대상자 명단 기준 질문 여부 — 선택한 세션 탭에 맞춰 보여 준다
+function drawRoster(s) {
+  const box = $('#roster');
+  const cols = session ? [session] : ['am', 'pm'];
+  const done = (p) => cols.some((c) => p[c] > 0);
+  const n = s.roster.filter(done).length;
+  box.replaceChildren(el('p', {}, el('b', {}, `질문 제출 ${n} / ${s.rosterTotal}명`), ` · 미제출 ${s.rosterTotal - n}명`,
+    session ? '' : ` (오전 ${s.asked.am}명 · 오후 ${s.asked.pm}명 · 한 번이라도 ${s.asked.any}명)`));
+  box.append(el('table', {}, el('thead', {}, el('tr', {}, ['성명', '직급', '소속', ...cols.map((c) => `${LABEL[c]} 질문`)].map((h) => el('th', {}, h)))),
+    el('tbody', {}, s.roster.map((p) => el('tr', { style: done(p) ? '' : 'background:rgba(220,50,50,.07)' },
+      el('td', {}, p.name), el('td', {}, p.title), el('td', {}, p.affiliation),
+      ...cols.map((c) => el('td', {}, p[c] ? `✓ ${p[c]}건` : '— 미제출')))))));
+  if (s.unlisted.length) box.append(el('p', { class: 'small muted' }, `명단에 없는 이름으로 제출: ${s.unlisted.map((x) => x.name).join(', ')}`));
 }
 
 function drawCards() {
@@ -50,7 +73,7 @@ function drawCards() {
   box.replaceChildren();
   if (!items.length) { box.append(el('p', { class: 'muted' }, '카드가 없습니다')); return; }
   items.forEach((c, i) => box.append(el('div', { class: 'card', style: c.status === 'hidden' ? 'opacity:.5' : '' },
-    el('div', { class: 'small muted' }, `${c.ref} · ${fmt(c.createdAt)}${c.status === 'hidden' ? ' · 숨김' : ''}`),
+    el('div', { class: 'small muted' }, `${LABEL[c.session]} · ${c.ref} · ${fmt(c.createdAt)}${c.status === 'hidden' ? ' · 숨김' : ''}`),
     el('p', { class: 'pre', style: 'margin:8px 0' }, c.body.length > 120 ? c.body.slice(0, 120) + '…' : c.body),
     el('div', { class: 'small' }, `${c.name} · ${c.title} · ${c.affiliation}`),
     el('div', { class: 'row', style: 'margin-top:8px' },
@@ -79,7 +102,7 @@ function stage(start) {
     el('div', { class: 'stage-foot' }, prev, count, next));
   const draw = () => {
     const c = items[k];
-    meta.textContent = blind ? c.ref : `${c.ref} · ${c.name} · ${c.title} · ${c.affiliation}`;
+    meta.textContent = blind ? `${LABEL[c.session]} · ${c.ref}` : `${LABEL[c.session]} · ${c.ref} · ${c.name} · ${c.title} · ${c.affiliation}`;
     text.textContent = c.body;
     count.textContent = `${k + 1} / ${items.length}`;
     prev.disabled = k === 0;

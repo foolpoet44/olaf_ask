@@ -17,12 +17,16 @@ const clean = (v, multiline) => (typeof v === 'string'
   ? v.replace(multiline ? /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g : /[\u0000-\u001F\u007F]/g, '').trim()
   : null);
 
-export const normalize = (b) => ({ affiliation: clean(b?.affiliation), name: clean(b?.name), title: clean(b?.title), body: clean(b?.body, true) });
+export const SESSIONS = { am: '오전 세션', pm: '오후 세션' };
+export const nameKey = (s) => String(s ?? '').normalize('NFC').replace(/\s+/g, '');
+
+export const normalize = (b) => ({ session: typeof b?.session === 'string' ? b.session : null, affiliation: clean(b?.affiliation), name: clean(b?.name), title: clean(b?.title), body: clean(b?.body, true) });
 
 /** @returns {string[]} 화면에 그대로 보여도 되는 문장 (입력값을 되풀이하지 않는다) */
 export function check(q, r = RULES) {
   if ([q.affiliation, q.name, q.title, q.body].some((v) => v === null)) return ['입력 형식이 올바르지 않습니다'];
   const p = [];
+  if (!Object.hasOwn(SESSIONS, q.session)) p.push('세션 주소가 올바르지 않습니다');
   for (const [k, label, max] of [['affiliation', '소속', r.affiliationMax], ['name', '성명', r.nameMax], ['title', '직급', r.titleMax]]) {
     if (!q[k]) p.push(`${label}을(를) 입력해 주세요`);
     else if (q[k].length > max) p.push(`${label}은(는) ${max}자까지입니다`);
@@ -39,5 +43,5 @@ export async function sha256Hex(text) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
-export const dedupeKey = (q) => sha256Hex(`${norm(q.name)}|${norm(q.body)}`);
+export const dedupeKey = (q) => sha256Hex(`${q.session}|${norm(q.name)}|${norm(q.body)}`);
 export const refOf = (id) => `Q-${String(id).padStart(4, '0')}`;
