@@ -2,7 +2,7 @@
 // 본문·작성자 칸 불변, 행 삭제 금지(삭제 = status 'hidden'). 사번·이메일·전화 칸 없음.
 export const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS intake_questions (
-    id INTEGER PRIMARY KEY, session TEXT NOT NULL DEFAULT 'am' CHECK (session IN ('am','pm')), affiliation TEXT NOT NULL, name TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL,
+    id INTEGER PRIMARY KEY, session TEXT NOT NULL DEFAULT 'am' CHECK (session IN ('am','pm')), professor TEXT NOT NULL DEFAULT '', affiliation TEXT NOT NULL, name TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL,
     dedupe_key TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open','hidden')),
     created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
   'CREATE UNIQUE INDEX IF NOT EXISTS intake_dedupe ON intake_questions(dedupe_key)',
@@ -15,9 +15,10 @@ export const SCHEMA = [
   'CREATE INDEX IF NOT EXISTS rate_hits_bucket ON rate_hits(bucket, at)',
 ];
 
-// 세션 구분 도입 전에 만들어진 DB 에 session 칸을 더한다 (기존 접수는 오전으로 둔다)
+// 이전 버전 DB 에 session·professor 칸을 더한다 (기존 접수는 오전·교수 미지정)
 async function migrate(db) {
   const cols = (await db.prepare('PRAGMA table_info(intake_questions)').all()).results.map((c) => c.name);
+  if (!cols.includes('professor')) await db.prepare("ALTER TABLE intake_questions ADD COLUMN professor TEXT NOT NULL DEFAULT ''").run();
   if (!cols.includes('session')) await db.prepare("ALTER TABLE intake_questions ADD COLUMN session TEXT NOT NULL DEFAULT 'am'").run();
 }
 

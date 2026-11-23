@@ -1,5 +1,5 @@
 // POST /api/intake — 누구나 제출 (로그인 없음)
-import { RULES, normalize, check, dedupeKey, refOf, sha256Hex } from '../rules.js';
+import { PROFESSORS, RULES, normalize, check, dedupeKey, refOf, sha256Hex } from '../rules.js';
 import { ok, fail } from '../http.js';
 
 export async function onRequestPost({ request, env }) {
@@ -26,8 +26,8 @@ export async function onRequestPost({ request, env }) {
   const key = await dedupeKey(q);
   const at = new Date().toISOString();
   const r = await env.DB.prepare(
-    'INSERT INTO intake_questions (session, affiliation, name, title, body, dedupe_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(dedupe_key) DO NOTHING',
-  ).bind(q.session, q.affiliation, q.name, q.title, q.body, key, at, at).run();
+    'INSERT INTO intake_questions (session, professor, affiliation, name, title, body, dedupe_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(dedupe_key) DO NOTHING',
+  ).bind(PROFESSORS[q.professor].session, q.professor, q.affiliation, q.name, q.title, q.body, key, at, at).run();
   if (r.meta.changes === 0) { // 같은 성명·본문 재전송 → 기존 접수번호
     const dup = await env.DB.prepare('SELECT id FROM intake_questions WHERE dedupe_key = ?').bind(key).first();
     return ok({ id: dup.id, ref: refOf(dup.id) }, 200);

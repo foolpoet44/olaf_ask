@@ -1,6 +1,12 @@
 const $ = (s) => document.querySelector(s);
 const MAX = 500;
-const SESSION = document.documentElement.dataset.session;
+let professor = '';
+for (const b of document.querySelectorAll('.prof')) {
+  b.addEventListener('click', () => {
+    professor = b.dataset.p;
+    for (const x of document.querySelectorAll('.prof')) { x.classList.toggle('primary', x === b); x.setAttribute('aria-pressed', String(x === b)); }
+  });
+}
 const show = (kind, text, problems = []) => {
   const out = $('#out');
   out.replaceChildren();
@@ -25,7 +31,7 @@ $('#submit').addEventListener('click', async () => {
     const r = await fetch('/api/intake', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ session: SESSION, affiliation: $('#affiliation').value, name: $('#name').value, title: $('#title').value, body: $('#body').value }),
+      body: JSON.stringify({ professor, affiliation: $('#affiliation').value, name: $('#name').value, title: $('#title').value, body: $('#body').value }),
     });
     const j = await r.json();
     if (!r.ok) {

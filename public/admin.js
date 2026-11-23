@@ -7,10 +7,11 @@ const el = (tag, attrs = {}, ...kids) => {
 };
 const fmt = (iso) => { const d = new Date(iso); const p = (x) => String(x).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
 
-$('#url-am').textContent = `${location.origin}/am`;
-$('#url-pm').textContent = `${location.origin}/pm`;
-const LABEL = { am: '오전', pm: '오후' };
-let session = ''; // '' 전체 · am · pm
+$('#askurl').textContent = `${location.origin}/`;
+const PROF = { cho: '조성인 교수', nam: '남창주 교수', song: '송성혁 교수', jung: '정석환 교수' };
+const SES = { cho: '오전', nam: '오전', song: '오후', jung: '오후' };
+const profLabel = (c) => (PROF[c.professor] ? `${SES[c.professor]} · ${PROF[c.professor]}` : '교수 미지정');
+let professor = ''; // '' 전체 · cho|nam|song|jung
 let key = '';
 try { key = sessionStorage.getItem('adminKey') || ''; } catch { /* 저장소 차단 */ }
 let items = [];
@@ -25,7 +26,7 @@ async function call(path, opt = {}) {
 
 async function load() {
   const q = new URLSearchParams();
-  if (session) q.set('session', session);
+  if (professor) q.set('professor', professor);
   if ($('#f-aff').value) q.set('affiliation', $('#f-aff').value);
   if ($('#f-name').value) q.set('name', $('#f-name').value);
   if ($('#f-hidden').checked) q.set('hidden', '1');
@@ -43,28 +44,27 @@ async function load() {
 }
 
 function drawTabs() {
-  $('#tabs').replaceChildren(...[['', '전체'], ['am', '오전 세션'], ['pm', '오후 세션']].map(([v, t]) =>
-    el('button', { class: v === session ? 'primary' : '', onclick: () => { session = v; load(); } }, t)));
+  $('#tabs').replaceChildren(...[['', '전체'], ...Object.entries(PROF).map(([k, v]) => [k, `${SES[k]} ${v}`])].map(([v, t]) =>
+    el('button', { class: v === professor ? 'primary' : '', onclick: () => { professor = v; load(); } }, t)));
 }
 
 function drawSummary(s) {
   const box = $('#summary');
-  box.replaceChildren(el('p', {}, el('b', {}, `총 ${s.total}건`), ` · 오전 ${s.bySession.am}건 · 오후 ${s.bySession.pm}건`));
+  box.replaceChildren(el('p', {}, el('b', {}, `총 ${s.total}건`), ' · ', Object.entries(PROF).map(([k, v]) => `${v} ${s.byProfessor[k]}건`).join(' · '), s.byProfessor.other ? ` · 교수 미지정 ${s.byProfessor.other}건` : ''));
   if (!s.total) box.append(el('p', { class: 'muted' }, '아직 접수된 질문이 없습니다'));
 }
 
-// 대상자 명단 기준 질문 여부 — 선택한 세션 탭에 맞춰 보여 준다
+// 대상자 명단 기준 질문 여부 — 선택한 교수 탭에 맞춰 보여 준다
 function drawRoster(s) {
   const box = $('#roster');
-  const cols = session ? [session] : ['am', 'pm'];
-  const done = (p) => cols.some((c) => p[c] > 0);
+  const cols = professor ? [professor] : Object.keys(PROF);
+  const done = (p) => (professor ? p.counts[professor] > 0 : Object.values(p.counts).some((n) => n > 0));
   const n = s.roster.filter(done).length;
-  box.replaceChildren(el('p', {}, el('b', {}, `질문 제출 ${n} / ${s.rosterTotal}명`), ` · 미제출 ${s.rosterTotal - n}명`,
-    session ? '' : ` (오전 ${s.asked.am}명 · 오후 ${s.asked.pm}명 · 한 번이라도 ${s.asked.any}명)`));
-  box.append(el('table', {}, el('thead', {}, el('tr', {}, ['성명', '직급', '소속', ...cols.map((c) => `${LABEL[c]} 질문`)].map((h) => el('th', {}, h)))),
+  box.replaceChildren(el('p', {}, el('b', {}, `질문 제출 ${n} / ${s.rosterTotal}명`), ` · 미제출 ${s.rosterTotal - n}명`));
+  box.append(el('table', {}, el('thead', {}, el('tr', {}, ['성명', '직급', '소속', ...cols.map((c) => PROF[c])].map((h) => el('th', {}, h)))),
     el('tbody', {}, s.roster.map((p) => el('tr', { style: done(p) ? '' : 'background:rgba(220,50,50,.07)' },
       el('td', {}, p.name), el('td', {}, p.title), el('td', {}, p.affiliation),
-      ...cols.map((c) => el('td', {}, p[c] ? `✓ ${p[c]}건` : '— 미제출')))))));
+      ...cols.map((c) => el('td', {}, p.counts[c] ? `✓ ${p.counts[c]}건` : '—')))))));
   if (s.unlisted.length) box.append(el('p', { class: 'small muted' }, `명단에 없는 이름으로 제출: ${s.unlisted.map((x) => x.name).join(', ')}`));
 }
 
@@ -73,7 +73,7 @@ function drawCards() {
   box.replaceChildren();
   if (!items.length) { box.append(el('p', { class: 'muted' }, '카드가 없습니다')); return; }
   items.forEach((c, i) => box.append(el('div', { class: 'card', style: c.status === 'hidden' ? 'opacity:.5' : '' },
-    el('div', { class: 'small muted' }, `${LABEL[c.session]} · ${c.ref} · ${fmt(c.createdAt)}${c.status === 'hidden' ? ' · 숨김' : ''}`),
+    el('div', { class: 'small muted' }, `${profLabel(c)} · ${c.ref} · ${fmt(c.createdAt)}${c.status === 'hidden' ? ' · 숨김' : ''}`),
     el('p', { class: 'pre', style: 'margin:8px 0' }, c.body.length > 120 ? c.body.slice(0, 120) + '…' : c.body),
     el('div', { class: 'small' }, `${c.name} · ${c.title} · ${c.affiliation}`),
     el('div', { class: 'row', style: 'margin-top:8px' },
@@ -102,7 +102,7 @@ function stage(start) {
     el('div', { class: 'stage-foot' }, prev, count, next));
   const draw = () => {
     const c = items[k];
-    meta.textContent = blind ? `${LABEL[c.session]} · ${c.ref}` : `${LABEL[c.session]} · ${c.ref} · ${c.name} · ${c.title} · ${c.affiliation}`;
+    meta.textContent = blind ? `${profLabel(c)} · ${c.ref}` : `${profLabel(c)} · ${c.ref} · ${c.name} · ${c.title} · ${c.affiliation}`;
     text.textContent = c.body;
     count.textContent = `${k + 1} / ${items.length}`;
     prev.disabled = k === 0;
