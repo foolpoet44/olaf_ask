@@ -121,6 +121,10 @@ test('대상자 명단: 32명 · 성명(공백 무시)으로 질문 여부 · �
   const s = (await j(await get())).data.summary;
   assert.equal(s.rosterTotal, 32);
   assert.equal(s.roster.length, 32);
+  assert.doesNotMatch(JSON.stringify(s), /empId|320670/); // 사번은 응답에 나가지 않는다
+  const { ROSTER } = await import('../src/roster.js');
+  assert.equal(ROSTER.find((p) => p.name === '한상혁').empId, '320670');
+  assert.equal(new Set(ROSTER.map((p) => p.empId)).size, 32);
   const by = (n) => s.roster.find((p) => p.name === n);
   assert.deepEqual([by('정용진').am, by('정용진').pm], [1, 1]);
   assert.deepEqual([by('한영재').am, by('한영재').pm], [1, 0]);

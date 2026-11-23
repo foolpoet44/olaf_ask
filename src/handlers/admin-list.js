@@ -32,7 +32,7 @@ export async function onRequestGet({ request, env }) {
     counts.set(nameKey(r.name), c);
   }
   const listed = new Set(ROSTER.map((p) => nameKey(p.name)));
-  const roster = ROSTER.map((p) => ({ ...p, am: counts.get(nameKey(p.name))?.am || 0, pm: counts.get(nameKey(p.name))?.pm || 0 }));
+  const roster = ROSTER.map(({ empId, ...p }) => ({ ...p, am: counts.get(nameKey(p.name))?.am || 0, pm: counts.get(nameKey(p.name))?.pm || 0 }));
   const unlisted = [...new Map(subs.results.filter((r) => !listed.has(nameKey(r.name))).map((r) => [nameKey(r.name), { name: r.name, affiliation: r.affiliation, title: r.title }])).values()];
 
   return ok({
