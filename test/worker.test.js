@@ -39,3 +39,15 @@ test('기존 DB(session 칸 없음) 마이그레이션: 칸이 추가되고 기�
   const d = (await (await call('GET', '/api/admin/intake', null, 'k')).json()).data;
   assert.deepEqual(d.summary.byProfessor, { cho: 0, nam: 0, song: 1, jung: 0, other: 1 });
 });
+
+test('화면 파일: 제출 폼에 교수 4개 버튼이 PROFESSORS 와 일치 · 옛 /am·/pm 링크 없음 · 사무국 화면 요소', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { PROFESSORS } = await import('../src/rules.js');
+  const index = readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
+  const keys = [...index.matchAll(/class="prof" data-p="(\w+)"/g)].map((m) => m[1]);
+  assert.deepEqual(keys.sort(), Object.keys(PROFESSORS).sort());
+  for (const id of ['affiliation', 'name', 'title', 'body', 'submit']) assert.match(index, new RegExp(`id="${id}"`));
+  assert.doesNotMatch(index, /href="\/(am|pm)"/);
+  const admin = readFileSync(new URL('../public/admin.html', import.meta.url), 'utf8');
+  for (const id of ['tabs', 'roster', 'summary', 'cards', 'askurl']) assert.match(admin, new RegExp(`id="${id}"`));
+});

@@ -5,13 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>질문 제출</title>
   <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/ask.js"></script>
 </head>
 <body>
   <main>
     <h1>질문 제출</h1>
-    <p class="muted small">참여하는 세션을 선택하세요. 세션별로 질문을 따로 모읍니다.</p>
+    <p class="muted small">로그인 없이 낼 수 있습니다. 사번·이메일·전화번호는 쓰지 마세요.</p>
     <section class="card">
-      <div class="row"><a href="/am"><button class="primary" type="button">오전 세션</button></a><a href="/pm"><button class="primary" type="button">오후 세션</button></a></div>
+      <label>질문 대상 교수</label>
+      <p class="small muted" style="margin:2px 0 6px">오전</p>
+      <div class="row"><button type="button" class="prof" data-p="cho" aria-pressed="false">조성인 교수</button><button type="button" class="prof" data-p="nam" aria-pressed="false">남창주 교수</button></div>
+      <p class="small muted" style="margin:10px 0 6px">오후</p>
+      <div class="row"><button type="button" class="prof" data-p="song" aria-pressed="false">송성혁 교수</button><button type="button" class="prof" data-p="jung" aria-pressed="false">정석환 교수</button></div>
+      <label for="affiliation">소속</label><input type="text" id="affiliation" autocomplete="organization">
+      <label for="name">성명</label><input type="text" id="name" autocomplete="name">
+      <label for="title">직급</label><input type="text" id="title">
+      <label for="body">질문 <span class="muted small" id="count"></span></label><textarea id="body" rows="5"></textarea>
+      <div id="out"></div>
+      <div class="row end" style="margin-top:12px"><button class="primary" id="submit">제출</button></div>
     </section>
   </main>
 </body>
